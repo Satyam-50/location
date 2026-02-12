@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoLink - Pro Live Share</title>
+    <style>
+        /* --- Production Grade Dark UI --- */
+        :root {
+            --bg-color: #0f172a;       /* Slate 900 */
+            --card-bg: #1e293b;        /* Slate 800 */
+            --text-primary: #f8fafc;   /* Slate 50 */
+            --text-secondary: #94a3b8; /* Slate 400 */
+            --accent-color: #3b82f6;   /* Blue 500 */
+            --success-color: #10b981;  /* Emerald 500 */
+            --warning-color: #f59e0b;  /* Amber 500 */
+            --danger-color: #ef4444;   /* Red 500 */
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+        /* Status Bar */
+        .status-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .status-dot {
+            height: 8px; width: 8px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Status States */
+        .active { border-color: var(--success-color); }
+        .active .status-dot { background-color: var(--success-color); animation: pulse 2s infinite; }
+        .active .status-text { color: var(--success-color); font-weight: 600; }
+
+        .error { border-color: var(--danger-color); }
+        .error .status-dot { background-color: var(--danger-color); animation: none; }
+        .error .status-text { color: var(--danger-color); }
+
+        .warning { border-color: var(--warning-color); }
+        .warning .status-dot { background-color: var(--warning-color); }
+        .warning .status-text { color: var(--warning-color); }
+
+        /* Data Grid */
+        .coords-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .coord-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .coord-box.full-width { grid-column: span 2; }
+
+        .coord-label {
+            font-size: 0.65rem; text-transform: uppercase;
+            color: var(--text-secondary); margin-bottom: 4px; letter-spacing: 0.5px;
+        }
+
+        .coord-value {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem; font-weight: 700; color: var(--text-primary);
+        }
+
+        .signal-good { color: var(--success-color); }
+        .signal-weak { color: var(--warning-color); }
+        .signal-bad { color: var(--danger-color); }
+
+        /* Map Area */
+        .map-wrapper {
+            width: 100%; height: 220px;
+            background-color: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        iframe { width: 100%; height: 100%; border: 0; }
+
+        .map-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: #1e293b; color: var(--text-secondary);
+            z-index: 2; transition: opacity 0.5s;
+        }
+
+        /* Buttons */
+        .btn-stack { display: flex; flex-direction: column; gap: 10px; }
+
+        .btn {
+            width: 100%; padding: 14px;
+            border: none; border-radius: 10px;
+            font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--accent-color); color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-primary:hover { background: #2563eb; }
+
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1); color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+
+        /* Utilities */
+        .privacy-text {
+            font-size: 0.75rem; color: var(--text-secondary);
+            margin-bottom: 15px; line-height: 1.4;
+            background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;
+        }
+        .hidden { display: none !important; }
+        .fade-out { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📍 GeoLink</h1>
+        <p class="subtitle">Consent-Based Live Location Share</p>
+
+        <div id="statusBox" class="status-box">
+            <span class="status-dot"></span>
+            <span id="statusText" class="status-text">System Ready</span>
+        </div>
+
+        <div id="dataArea" class="coords-grid hidden">
+            <div class="coord-box">
+                <span class="coord-label">Latitude</span>
+                <span class="coord-value" id="lat">--</span>
+            </div>
+            <div class="coord-box">
+                <span class="coord-label">Longitude</span>
+                <span class="coord-value" id="lng">--</span>
+            </div>
+            <div class="coord-box full-width">
+                <span class="coord-label">GPS Signal Strength</span>
+                <span class="coord-value" id="signalVal">--</span>
+            </div>
+        </div>
+
+        <div class="map-wrapper">
+            <div id="mapOverlay" class="map-overlay">
+                <p>Waiting for permission...</p>
+            </div>
+            <iframe id="mapFrame" loading="lazy"></iframe>
+        </div>
+
+        <p id="privacyText" class="privacy-text">
+            🔒 <strong>Privacy Note:</strong> This tool runs entirely in your browser. 
+            Location is shared only when you manually send the link.
+        </p>
+
+        <div class="btn-stack">
+            <button id="startBtn" class="btn btn-primary" onclick="startTracking()">
+                <span>🚀</span> Start Live Sharing
+            </button>
+            
+            <div id="actionButtons" class="btn-stack hidden">
+                <button id="copyBtn" class="btn btn-secondary" onclick="copyLocation()">
+                    <span>📋</span> Copy Live Link
+                </button>
+                <button class="btn btn-secondary" onclick="openMap()">
+                    <span>🗺️</span> Open in Google Maps App
+                </button>
+                <button class="btn btn-danger" onclick="stopTracking()">
+                    <span>🛑</span> Stop Sharing
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Security Pre-check ---
+        if (location.protocol !== "https:" && location.hostname !== "localhost") {
+            console.warn("Geolocation requires HTTPS.");
+        }
+
+        // --- State Management ---
+        const state = {
+            watchId: null,
+            currentLink: "",
+            lastUpdateTimestamp: 0,
+            startTime: 0,
+            timerInterval: null
+        };
+
+        // --- UI Elements ---
+        const ui = {
+            statusBox: document.getElementById('statusBox'),
+            statusText: document.getElementById('statusText'),
+            lat: document.getElementById('lat'),
+            lng: document.getElementById('lng'),
+            signalVal: document.getElementById('signalVal'),
+            dataArea: document.getElementById('dataArea'),
+            mapFrame: document.getElementById('mapFrame'),
+            mapOverlay: document.getElementById('mapOverlay'),
+            startBtn: document.getElementById('startBtn'),
+            actionButtons: document.getElementById('actionButtons'),
+            privacyText: document.getElementById('privacyText'),
+            copyBtn: document.getElementById('copyBtn') // [Optimization 4] Cached DOM ref
+        };
+
+        // --- Core Functions ---
+
+        function startTracking() {
+            // [Optimization 2] Prevent multiple watchers
+            if (state.watchId !== null) return;
+
+            if (!navigator.geolocation) {
+                setStatus("Geolocation not supported", "error");
+                return;
+            }
+
+            // Reset State
+            state.startTime = Date.now();
+            state.lastUpdateTimestamp = 0; 
+            
+            setStatus("Initializing GPS...", "normal");
+            ui.startBtn.disabled = true;
+            ui.startBtn.innerHTML = "<span>⌛</span> Connecting...";
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            };
+
+            state.watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+            startTimer();
+        }
+
+        function handleSuccess(position) {
+            const { latitude, longitude, accuracy } = position.coords;
+            state.lastUpdateTimestamp = Date.now();
+
+            // 1. Update High-Precision Text
+            ui.lat.textContent = latitude.toFixed(5);
+            ui.lng.textContent = longitude.toFixed(5);
+            
+            // 2. Signal Logic
+            let signalText, signalClass;
+            if (accuracy <= 20) {
+                signalText = `Strong (±${Math.round(accuracy)}m)`;
+                signalClass = "signal-good";
+            } else if (accuracy <= 50) {
+                signalText = `Fair (±${Math.round(accuracy)}m)`;
+                signalClass = "signal-weak";
+            } else {
+                signalText = `Weak (±${Math.round(accuracy)}m)`;
+                signalClass = "signal-bad";
+            }
+            ui.signalVal.textContent = signalText;
+            ui.signalVal.className = `coord-value ${signalClass}`;
+
+            // 3. Map Embed Optimization (Prevent Flicker)
+            const latRounded = Number(latitude).toFixed(4);
+            const lngRounded = Number(longitude).toFixed(4);
+            const embedUrl = `https://maps.google.com/maps?q=${latRounded},${lngRounded}&z=15&output=embed`;
+            
+            if (ui.mapFrame.src !== embedUrl) {
+                ui.mapFrame.src = embedUrl;
+            }
+
+            // 4. Update Sharing Link
+            state.currentLink = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+
+            // 5. UI Transitions
+            ui.dataArea.classList.remove('hidden');
+            ui.mapOverlay.classList.add('fade-out');
+            ui.startBtn.classList.add('hidden');
+            ui.privacyText.classList.add('hidden');
+            ui.actionButtons.classList.remove('hidden');
+
+            ui.statusBox.classList.add('active');
+            ui.statusBox.classList.remove('error');
+            ui.statusBox.classList.remove('warning');
+        }
+
+        function handleError(error) {
+            let msg = "Unknown error";
+            switch(error.code) {
+                case 1: msg = "Permission Denied"; break;
+                case 2: msg = "Position Unavailable"; break;
+                case 3: msg = "Signal Timeout"; break;
+            }
+            setStatus(msg, "error");
+            if(error.code === 1) stopTracking(true); 
+        }
+
+        function stopTracking(force = false) {
+            if (!force && !confirm("Are you sure you want to stop sharing your location?")) {
+                return;
+            }
+
+            if (state.watchId !== null) {
+                navigator.geolocation.clearWatch(state.watchId);
+                state.watchId = null;
+            }
+            
+            clearInterval(state.timerInterval);
+            state.timerInterval = null; // [Optimization 1] Prevent Memory Leak
+            
+            setStatus("Sharing Stopped", "normal");
+            ui.startBtn.classList.remove('hidden');
+            ui.actionButtons.classList.add('hidden');
+            ui.startBtn.disabled = false;
+            ui.startBtn.innerHTML = "<span>🚀</span> Start Live Sharing";
+            ui.privacyText.classList.remove('hidden');
+            ui.statusBox.classList.remove('active');
+            ui.statusBox.classList.remove('error');
+            ui.statusBox.classList.remove('warning');
+            ui.mapOverlay.classList.remove('fade-out');
+        }
+
+        // --- Dashboard Timer Logic ---
+
+        function startTimer() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            
+            // Run immediate update
+            updateStatusText();
+
+            state.timerInterval = setInterval(() => {
+                if (state.watchId !== null) updateStatusText();
+            }, 1000);
+        }
+
+        function updateStatusText() {
+            if (!state.lastUpdateTimestamp) {
+                ui.statusText.textContent = "Connecting to satellites...";
+                return;
+            }
+
+            const now = Date.now();
+            const durationSec = Math.floor((now - state.startTime) / 1000);
+            const dMin = Math.floor(durationSec / 60);
+            const dSec = (durationSec % 60).toString().padStart(2, '0');
+            
+            const lastUpdateSec = Math.floor((now - state.lastUpdateTimestamp) / 1000);
+
+            // [Optimization 5] Low GPS Warning
+            if (lastUpdateSec > 10) {
+                ui.statusBox.classList.remove('active');
+                ui.statusBox.classList.add('warning'); // Visual feedback
+                ui.statusText.textContent = `Signal Weak (Updated ${lastUpdateSec}s ago)`;
+            } else {
+                ui.statusBox.classList.add('active');
+                ui.statusBox.classList.remove('warning');
+                ui.statusText.textContent = `Live: ${dMin}:${dSec} • Updated ${lastUpdateSec}s ago`;
+            }
+        }
+
+        function setStatus(text, type) {
+            ui.statusText.textContent = text;
+            ui.statusBox.className = 'status-box'; 
+            if (type === 'active') ui.statusBox.classList.add('active');
+            if (type === 'error') ui.statusBox.classList.add('error');
+            if (type === 'warning') ui.statusBox.classList.add('warning');
+        }
+
+        function copyLocation() {
+            if (!state.currentLink) return;
+            navigator.clipboard.writeText(state.currentLink).then(() => {
+                const originalHTML = ui.copyBtn.innerHTML;
+                ui.copyBtn.innerHTML = "<span>✅</span> Copied!";
+                setTimeout(() => { ui.copyBtn.innerHTML = originalHTML; }, 2000);
+            });
+        }
+
+        function openMap() {
+            if (state.currentLink) window.open(state.currentLink, '_blank');
+        }
+
+        // [Optimization 3] Handle Page Visibility
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && state.watchId !== null) {
+                console.log("📍 Tab hidden - GPS tracking running in background");
+            }
+        });
+    </script>
+</body>
+</html>
